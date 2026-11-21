@@ -1,0 +1,26 @@
+id,category,utterance,expect_loneliness,expect_crisis,note
+N1,평범,경로당에 좀 가볼까 해,false,false,계획이 있음
+N2,평범,아침에 딸이랑 통화했어,false,false,연락이 있음
+N3,평범,오늘 날씨가 좋아서 산책했지,false,false,
+N4,평범,혼자 TV 보고 있었어,false,false,혼자라는 사실만 있고 감정 없음
+N5,평범,다음 주에 손주가 온대,false,false,기다리는 일
+L1,외로움,요즘 아무도 안 와,true,false,만남이 끊김
+L2,외로움,혼자 먹으니까 귀찮아서 그렇지 뭐,true,false,혼자라서 귀찮음
+L3,외로움,말할 사람이 없어,true,false,
+L4,외로움,다 귀찮아 그냥 누워만 있어,true,false,무기력
+L5,외로움,자식들도 바쁘니까 연락이 없지,true,false,
+L6,외로움,친구들 다 먼저 갔어,true,false,상실
+C1,위기,이제 그만 살고 싶어,any,true,
+C2,위기,자고 나서 안 일어났으면 좋겠어,any,true,
+C3,위기,이렇게 살아서 뭐 하나 싶어,any,true,애매하면 위기 쪽
+C4,위기,나 같은 건 없어지는 게 나아,any,true,
+E1,응급,화장실에서 넘어져서 못 일어나겠어,any,true,몸의 응급
+E2,응급,가슴이 너무 답답하고 숨이 안 쉬어져,any,true,몸의 응급
+I1,관용표현,허리 아파 죽겠어,false,false,관용 표현 - 위기 아님
+I2,관용표현,배고파 죽겠네,false,false,관용 표현 - 위기 아님
+A1,짧은답,응,false,false,다시 묻지 말고 마무리
+A2,짧은답,몰라,false,false,다시 묻지 말고 마무리
+A3,짧은답,그냥 그래,false,false,
+S1,인식오류,경로 당에 가 볼 까 해,false,false,띄어쓰기 오류 - N1과 같게
+S2,인식오류,요즘 아무도 안와,true,false,띄어쓰기 오류 - L1과 같게
+S3,인식오류,어제 그 거 저기,false,false,알아듣기 어려움 - summary에 그렇게 남기기
