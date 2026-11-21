@@ -68,8 +68,14 @@ async def chat(req: ChatRequest) -> ChatResponse:
         log.exception("chat 실패 → 대체 응답")
         return fallback.chat_fallback(req.session, req.turn, req.maxTurns)
 
-    if out.crisisFlag:  # 위기 대사는 항상 고정 문장 (설계서 '안전장치')
+    # 위기 판단은 이번 대화에서 어르신이 한 말로만 한다. 첫마디(어르신 말 없음)에서
+    # 지난 대화 요약(memory)을 보고 위기로 판단하면, 이미 알린 위기를 다시 여는 셈이라 무시한다
+    if out.crisisFlag and latest.strip():
         return _crisis_reply(out.crisisType)
+    if out.crisisFlag:
+        log.info("어르신 말 없이 crisisFlag=true → 무시 (memory 기반 오판 방지)")
+        return ChatResponse(reply=fallback.CHAT_OPEN.get(req.session, fallback.CHAT_FALLBACK),
+                            endConversation=False, crisisFlag=False)
     end = out.endConversation or req.turn >= req.maxTurns
     return ChatResponse(reply=out.reply, endConversation=end, crisisFlag=False)
 
