@@ -9,8 +9,8 @@ CREATE TABLE caregivers (
     name          VARCHAR(50)  NOT NULL,
     center_name   VARCHAR(100) NOT NULL,
     phone         VARCHAR(20),
-    login_id      VARCHAR(50)  UNIQUE,          -- [API] POST /auth/login
-    password_hash      VARCHAR(100)                  -- [API] 시연용 계정 1개
+    login_id      VARCHAR(50)  NOT NULL UNIQUE, -- [API] POST /auth/login 아이디
+    password      VARCHAR(100) NOT NULL         -- [API] 비밀번호. BCrypt 해시(60자) 저장 권장, 평문이면 시연용만
 );
 
 CREATE TABLE seniors (
@@ -48,7 +48,9 @@ CREATE TABLE conversations (
     transcript         TEXT,                    -- JSON 배열 [{"role":"ai","text":"..."}]
     summary            TEXT,                    -- 40자 안쪽
     loneliness_signal  BOOLEAN   NOT NULL DEFAULT FALSE,
-    crisis_flag        BOOLEAN   NOT NULL DEFAULT FALSE
+    crisis_flag        BOOLEAN   NOT NULL DEFAULT FALSE,
+    loneliness_evidence TEXT,                   -- [API] classify 응답. 어르신 말 그대로 인용 (복지사 화면 근거)
+    crisis_evidence     TEXT                    -- [API] classify 응답
 );
 
 -- 어르신·날짜당 1행, 다시 계산하면 덮어씀
