@@ -23,6 +23,19 @@ HTTP_TIMEOUT_MS = 15_000  # 가장 긴 함수 제한(12초)보다 조금 길게.
 _client = None
 
 
+class SafetyBlocked(RuntimeError):
+    """Gemini 안전 필터가 입력이나 답을 막았다. 위기 문장일 가능성이 높으므로 부르는 쪽이 위기로 다룬다."""
+
+
+# 위기 문장을 '판단'해야 하므로 필터를 끈다. 답은 서비스 쪽에서 고정 대사로 바꾼다.
+_SAFETY_CATEGORIES = (
+    "HARM_CATEGORY_HARASSMENT",
+    "HARM_CATEGORY_HATE_SPEECH",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    "HARM_CATEGORY_DANGEROUS_CONTENT",
+)
+
+
 def is_configured() -> bool:
     return bool(os.getenv("GEMINI_API_KEY")) and bool(os.getenv("GEMINI_MODEL"))
 
@@ -54,6 +67,12 @@ def _build_config(system: str, schema: type[BaseModel], temperature: float):
         response_mime_type="application/json",
         response_schema=schema,
     )
+    try:
+        kwargs["safety_settings"] = [
+            types.SafetySetting(category=c, threshold="BLOCK_NONE") for c in _SAFETY_CATEGORIES
+        ]
+    except (AttributeError, TypeError, ValueError):
+        log.warning("이 SDK에서는 safety_settings를 쓸 수 없어 기본 필터로 호출")
     level = os.getenv("GEMINI_THINKING_LEVEL")
     if level:
         try:
@@ -61,6 +80,25 @@ def _build_config(system: str, schema: type[BaseModel], temperature: float):
         except (AttributeError, TypeError, ValueError):
             log.warning("이 SDK에서는 thinking_level을 쓸 수 없어 기본값으로 호출")
     return types.GenerateContentConfig(**kwargs)
+
+
+def _blocked_reason(resp) -> Optional[str]:
+    """응답이 안전 필터로 막혔으면 그 이유를, 아니면 None."""
+    fb = getattr(resp, "prompt_feedback", None)
+    if fb is not None and getattr(fb, "block_reason", None):
+        return str(fb.block_reason)
+    for c in getattr(resp, "candidates", None) or []:
+        reason = str(getattr(c, "finish_reason", "") or "")
+        if any(k in reason for k in ("SAFETY", "PROHIBITED", "BLOCKLIST", "SPII")):
+            return reason
+    return None
+
+
+def _text(resp) -> str:
+    try:
+        return resp.text or ""
+    except Exception:  # noqa: BLE001  막힌 응답에서 .text가 예외를 내는 SDK 버전 대비
+        return ""
 
 
 def _is_busy(e: Exception) -> bool:
@@ -113,9 +151,15 @@ async def generate_json(
                     last_error = e
                     break
                 raise
+            text = _text(resp)
+            if not text:
+                reason = _blocked_reason(resp)
+                if reason:
+                    log.warning("%s 안전 필터 차단: %s", model, reason)
+                    raise SafetyBlocked(reason)
             try:
-                return schema.model_validate_json(resp.text or "")
+                return schema.model_validate_json(text)
             except ValidationError as e:
                 last_error = e
-                log.warning("JSON 형식 오류 (%s, 시도 %d): %s", model, attempt + 1, resp.text)
+                log.warning("JSON 형식 오류 (%s, 시도 %d): %s", model, attempt + 1, text)
     raise last_error or RuntimeError("Gemini 응답 없음")
