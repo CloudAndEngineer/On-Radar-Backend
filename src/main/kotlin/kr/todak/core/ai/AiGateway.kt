@@ -3,18 +3,42 @@ package kr.todak.core.ai
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
-/** 위기 표현 단어 목록 — AI 분류 실패 때, 그리고 AI 판정과 이중 확인용 */
+/**
+ * 위기 표현 단어 목록 — AI 분류 실패 때, 그리고 AI 판정과 이중 확인용.
+ * ai-service/app/safety.py 와 같은 범위로 맞춤 (AI 서비스가 죽어도 같은 문장을 잡도록)
+ */
 object CrisisWords {
-    private val patterns = listOf(
-        "죽고 싶", "죽고싶", "죽어야", "죽을래", "죽어 버리", "죽어버리",
-        "살기 싫", "살기싫", "그만 살", "더 살아서", "살 이유", "사는 게 의미",
-        "자살", "목숨을 끊", "세상 떠나고", "세상 뜨고", "먼저 가고 싶", "따라가고 싶",
-        "숨이 안 쉬어", "숨을 못 쉬", "쓰러졌", "넘어져서 못 일어", "가슴이 너무 아파",
+    /** 몸의 응급 → 119 안내 */
+    private val body = listOf(
+        "숨이 안 쉬어", "숨을 못 쉬", "숨이 막", "숨쉬기가 힘들",
+        "쓰러졌", "넘어져서 못 일어", "넘어졌는데 못 일어", "넘어져서 안 일어",
+        "가슴이 너무 아파", "가슴이 너무 답답", "가슴이 조여",
     )
+
+    /** 마음의 위기 */
+    private val mind = listOf(
+        "죽고 싶", "죽어야", "죽을래", "죽어 버리", "죽어버리",
+        "살기 싫", "그만 살", "더 살아서", "살아서 뭐", "살 이유", "사는 게 의미", "살 만큼 살았",
+        "자살", "목숨을 끊", "세상 떠나고", "세상 뜨고", "먼저 가고 싶", "따라가고 싶", "따라가야",
+        "안 일어났으면", "눈 안 떴으면", "자는 듯이 가", "데려갔으면",
+        "없어지는 게 나", "없어졌으면", "사라지고 싶", "끝내고 싶", "뛰어내리",
+    )
+
+    const val REPLY_MIND = "말씀해 주셔서 고마워요. 지금 복지사 선생님께 바로 알려서 연락드리도록 할게요."
+    const val REPLY_BODY = "많이 불편하시군요. 복지사 선생님께 바로 알릴게요. 급하시면 119에 전화하세요."
 
     fun contains(text: String?): Boolean = find(text) != null
 
-    fun find(text: String?): String? {
+    fun find(text: String?): String? = match(text, body) ?: match(text, mind)
+
+    /** 위기 문장이면 고정 대사, 아니면 null. 몸의 응급을 먼저 봅니다 */
+    fun replyFor(text: String?): String? = when {
+        match(text, body) != null -> REPLY_BODY
+        match(text, mind) != null -> REPLY_MIND
+        else -> null
+    }
+
+    private fun match(text: String?, patterns: List<String>): String? {
         if (text.isNullOrBlank()) return null
         val compact = text.replace(" ", "")
         return patterns.firstOrNull { p -> text.contains(p) || compact.contains(p.replace(" ", "")) }

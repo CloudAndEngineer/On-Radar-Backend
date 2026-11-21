@@ -116,22 +116,26 @@ class ConversationService(
         val nextTurn = transcripts.turnOf(history) + 1
         val chat = ai.chat(chatRequest(senior, check, history, nextTurn))
 
-        val ended = chat.endConversation || nextTurn >= MAX_TURNS
+        // 위기 표현: AI 판단 + 단어 규칙 이중 확인 → 대화가 끝나기 전에 바로 EMERGENCY
+        val keyword = CrisisWords.find(text)
+        // AI가 실패(대체 문장)했거나 놓쳤는데 단어 규칙에 걸리면, 답도 위기 고정 대사로 바꾸고 대화를 끝낸다
+        val ruleReply = if (keyword != null && !chat.crisisFlag) CrisisWords.replyFor(text) else null
+        val reply = ruleReply ?: chat.reply
+
+        val ended = chat.endConversation || nextTurn >= MAX_TURNS || ruleReply != null
         conv = conversations.save(
             conv.copy(
-                transcript = transcripts.write(history + AiTurn("ai", chat.reply)),
+                transcript = transcripts.write(history + AiTurn("ai", reply)),
                 endedAt = if (ended) clock.now() else null,
             ),
         )
 
-        // 위기 표현: AI 판단 + 단어 규칙 이중 확인 → 대화가 끝나기 전에 바로 EMERGENCY
-        val keyword = CrisisWords.find(text)
         if (chat.crisisFlag || keyword != null) {
             log.warn("대화 중 위기 표현 senior={} conv={} ai={} keyword={}", senior.id, conv.id, chat.crisisFlag, keyword)
             conv = raiseCrisis(conv, senior.id!!, text.trim())
         }
         if (ended) finisher.finishAsync(conv.id!!)
-        return MessageResponse(chat.reply, nextTurn, ended)
+        return MessageResponse(reply, nextTurn, ended)
     }
 
     /** [다음에 할게요] — 분류·요약까지 마치고 돌려줍니다 (AI 최대 13초) */
