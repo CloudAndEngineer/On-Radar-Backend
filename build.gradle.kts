@@ -24,6 +24,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.springframework.security:spring-security-crypto") // 비밀번호 BCrypt 해시 (보안 필터는 켜지지 않음)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.30.0") // FCM HTTP v1 토큰용
     runtimeOnly("com.h2database:h2")

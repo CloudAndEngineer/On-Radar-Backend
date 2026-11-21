@@ -19,7 +19,7 @@ data class Caregiver(
     val centerName: String,
     val phone: String? = null,
     val loginId: String? = null,
-    val passwordHash: String? = null, // SHA-256 hex (시드가 평문을 넣어도 로그인은 됨)
+    val passwordHash: String? = null, // BCrypt 해시. 원문 저장 금지
 )
 
 @Table("SENIORS")

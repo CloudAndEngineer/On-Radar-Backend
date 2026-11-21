@@ -38,12 +38,14 @@ object Tokens {
         prefix + (1..length).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
 }
 
-/** SHA-256 hex. 시드가 password_hash 에 평문을 넣었어도 로그인되도록 둘 다 비교합니다 */
+/** BCrypt 해시. 솔트가 자동으로 들어가고, 원문은 저장하지도 비교하지도 않습니다 */
 object Passwords {
-    fun hash(raw: String): String =
-        java.security.MessageDigest.getInstance("SHA-256").digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }
+    private val encoder = org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder()
 
-    fun matches(raw: String, stored: String?): Boolean = stored != null && (stored == hash(raw) || stored == raw)
+    fun hash(raw: String): String = encoder.encode(raw)
+
+    fun matches(raw: String, stored: String?): Boolean =
+        !stored.isNullOrBlank() && runCatching { encoder.matches(raw, stored) }.getOrDefault(false)
 }
 
 /**
