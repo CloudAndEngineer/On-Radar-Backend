@@ -3,6 +3,7 @@ package kr.todak.core.config
 import kr.todak.core.auth.AuthArgumentResolver
 import kr.todak.core.auth.AuthCaregiver
 import kr.todak.core.auth.AuthSenior
+import org.slf4j.LoggerFactory
 import org.springdoc.core.utils.SpringDocUtils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -24,9 +25,26 @@ class WebConfig(
         SpringDocUtils.getConfig().addRequestWrapperToIgnore(AuthSenior::class.java, AuthCaregiver::class.java)
     }
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 환경변수로 들어온 허용 origin 을 정리합니다.
+     * 쉼표로 이어 붙인 값, 앞뒤 공백·따옴표, 끝의 '/' 는 브라우저가 보내는 Origin 과 달라
+     * 조용히 403 이 나므로 여기서 맞춰 줍니다. 비어 있으면 '*' 로 둡니다.
+     */
+    internal fun corsOrigins(): List<String> =
+        props.corsAllowedOrigins
+            .flatMap { it.split(",") }
+            .map { it.trim().trim('"', '\'').trim().removeSuffix("/") }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .ifEmpty { listOf("*") }
+
     override fun addCorsMappings(registry: CorsRegistry) {
+        val origins = corsOrigins()
+        log.info("CORS 허용 origin: {}", origins)
         registry.addMapping("/api/**")
-            .allowedOriginPatterns(*props.corsAllowedOrigins.map { it.trim() }.filter { it.isNotEmpty() }.toTypedArray())
+            .allowedOriginPatterns(*origins.toTypedArray())
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(false)

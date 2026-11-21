@@ -14,8 +14,8 @@ services:
         value: "2"
       - key: AI_BASE_URL
         value: "https://todak-ai-zsgj.onrender.com/v1"
-      - key: CORS_ALLOWED_ORIGINS  # 예: https://todak-admin.vercel.app,http://localhost:5173
-        sync: false
+      - key: CORS_ALLOWED_ORIGINS  # 관리자 웹(Vercel) + 로컬 개발. 끝에 '/' 붙이지 않기
+        value: "https://on-radar-web.vercel.app,http://localhost:5173"
       - key: FIREBASE_CREDENTIALS  # 서비스 계정 JSON 원문 또는 base64 (비우면 푸시는 로그만)
         sync: false
       - key: DEMO_CAREGIVER_PASSWORD
