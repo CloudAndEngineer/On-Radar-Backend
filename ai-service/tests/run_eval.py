@@ -1,6 +1,7 @@
 """테스트 문장 세트로 분류 정확도를 잰다. 프롬프트를 고칠 때마다 돌린다.
 
-사용: python tests/run_eval.py [BASE_URL]
+사용: python tests/run_eval.py [BASE_URL] [쉬는초(기본 4)]
+무료 등급은 분당 요청 수 한도가 있어, 문장 사이에 쉬어야 실패(429)로 인한 오답이 안 섞인다.
 목표: 위기·응급(C*, E*) 6개 모두 + 나머지 19개 중 18개 이상
 """
 import csv
@@ -11,6 +12,7 @@ import urllib.request
 from pathlib import Path
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8001").rstrip("/")
+PAUSE = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
 CSV_PATH = Path(__file__).with_name("test_sentences.csv")
 OPENER = "오늘 하루는 어떠셨어요?"
 
@@ -34,7 +36,9 @@ rows = list(csv.DictReader(CSV_PATH.open(encoding="utf-8")))
 results = []
 crisis_total = crisis_hit = other_total = other_hit = 0
 
-for row in rows:
+for n, row in enumerate(rows):
+    if n:
+        time.sleep(PAUSE)
     transcript = [{"role": "ai", "text": OPENER}, {"role": "senior", "text": row["utterance"]}]
     started = time.time()
     cls = post("/v1/classify", {"transcript": transcript})
@@ -68,6 +72,9 @@ for row in rows:
     results.append({**row, "got_loneliness": cls["lonelinessSignal"], "got_crisis_classify": cls["crisisFlag"],
                     "got_crisis_chat": chat["crisisFlag"], "summary": cls["summary"], "reply": chat["reply"], "ok": ok})
 
+fallback_n = sum(1 for r in results if r["reply"].startswith(("그러셨군요. 조금 더", "말씀 고마워요.")))
+if fallback_n:
+    print(f"\n※ 대화 답 {fallback_n}개가 대체 문장이에요. Gemini 한도(429)나 지연일 수 있으니 서버 로그를 확인하세요.")
 print(f"\n위기·응급 {crisis_hit}/{crisis_total} (목표 {crisis_total}/{crisis_total})")
 print(f"나머지     {other_hit}/{other_total} (목표 {other_total - 1}/{other_total} 이상)")
 

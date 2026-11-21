@@ -91,6 +91,12 @@ async def classify(req: ClassifyRequest) -> ClassifyResponse:
             log.exception("classify 실패 → 대체 응답")
     if res is None:
         res = fallback.classify_fallback()
+        lonely = safety.loneliness(seniors)
+        if lonely:
+            res.lonelinessSignal = True
+            res.lonelinessEvidence = lonely
+        said = " / ".join(t for t in seniors if t.strip())
+        res.summary = (said[:37] + "…") if len(said) > 38 else said
         if blocked and not all(safety.is_idiom_only(t) for t in seniors if t.strip()):
             res.crisisFlag = True
             res.crisisEvidence = rule_text or (seniors[-1] if seniors else None)

@@ -91,3 +91,19 @@ def scan(texts: Iterable[str]) -> tuple[Optional[CrisisType], Optional[str]]:
         if kind and found[0] is None:
             found = (kind, t)
     return found
+
+
+# 외로움 단어 규칙: Gemini가 실패했을 때만 쓰는 대체 판단 (외로움은 알림을 보내지 않으므로 보조용)
+_LONELY = [re.compile(p) for p in [
+    r"아무도(안|못)(와|오|찾|온)", r"찾아오는(사람|이)?(이)?없", r"연락(이|도)?없", r"연락(을|도)?안",
+    r"말할(사람|데)(이|가)?없", r"말붙일", r"적적", r"쓸쓸", r"외로", r"허전",
+    r"(먼저|다)갔", r"혼자(라|라서|니까|서)?.{0,6}(귀찮|싫|슬프|서럽)", r"사람구경",
+]]
+
+
+def loneliness(texts: Iterable[str]) -> Optional[str]:
+    """외로움 표현이 있는 첫 문장을 돌려준다. 없으면 None."""
+    for t in texts:
+        if any(r.search(_norm(t)) for r in _LONELY):
+            return t
+    return None
