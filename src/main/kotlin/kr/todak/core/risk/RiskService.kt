@@ -121,7 +121,7 @@ class RiskSummaryWorker(
                 seniorName = senior.name,
                 riskLevel = result.level.name,
                 score = result.score,
-                reasons = result.reasons.map { it.toAi() },
+                reasons = result.reasons.filter { it.baseline != null && it.recent != null }.map { it.toAi() },
                 immediateTriggers = result.immediateTriggers,
                 lonelinessDays = result.lonelinessDays,
             ),
