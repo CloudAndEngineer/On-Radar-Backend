@@ -12,6 +12,8 @@ DEMO_TODAY=2026-11-21 ALERT_STEP_MINUTES=1 ./gradlew bootRun   # 시연 설정
 ./gradlew test                          # 점수 엔진 테스트 (명세서 예시 81점·3점 재현)
 ```
 
+- Java 21을 설치하고 `JAVA_HOME` 및 IDE의 Gradle JVM을 Java 21로 지정합니다. Gradle Wrapper는 8.14.3이며, 컴파일 툴체인과 Gradle daemon도 Java 21로 고정되어 있습니다.
+
 - Swagger: `http://localhost:8080/api/docs`
 - 상태 확인: `GET /health` (오늘 날짜, AI 모드, FCM 사용 여부, SSE 연결 수)
 - 호출 예시: `api.http` (IntelliJ / VS Code REST Client)
