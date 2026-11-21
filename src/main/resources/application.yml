@@ -1,0 +1,74 @@
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: todak-core
+  datasource:
+    # Render 무료 인스턴스는 디스크가 남지 않으므로 메모리 DB + 기동 시 시드
+    url: ${DATABASE_URL:jdbc:h2:mem:todak;DB_CLOSE_DELAY=-1}
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      # 팀 schema.sql (ERD) → Core 추가 컬럼
+      schema-locations: classpath:schema.sql,classpath:schema-core.sql
+  h2:
+    console:
+      enabled: ${H2_CONSOLE:false}
+      path: /h2-console
+  jackson:
+    time-zone: Asia/Seoul
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+  mvc:
+    async:
+      request-timeout: -1   # SSE 연결을 서버가 끊지 않도록
+
+todak:
+  # 시연용: 시드 데이터 마지막 날. 비우면 실제 오늘(한국 시간)
+  demo-today: ${DEMO_TODAY:}
+  # 알림 단계 간격(분). 운영 120, 시연 1~2
+  alert-step-minutes: ${ALERT_STEP_MINUTES:120}
+  # AI 서비스 주소 (예: https://todak-ai.onrender.com/v1). 비우면 내장 모의 AI로 동작
+  ai-base-url: ${AI_BASE_URL:}
+  # 웹 주소들, 쉼표로 구분 (예: https://todak.vercel.app,http://localhost:5173)
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+  # Firebase 서비스 계정 JSON 원문 또는 base64. 비우면 푸시는 로그로만 남김
+  firebase-credentials: ${FIREBASE_CREDENTIALS:}
+  seed-enabled: ${SEED_ENABLED:true}
+  demo-caregiver-login-id: ${DEMO_CAREGIVER_LOGIN_ID:demo}
+  demo-caregiver-password: ${DEMO_CAREGIVER_PASSWORD:todak1234}
+  # 복지사 로그인 토큰 서명 키. 비우면 기동할 때마다 새로 만듦 (재시작하면 다시 로그인)
+  auth-secret: ${AUTH_SECRET:}
+  # 체크 알림 시각과 미응답 마감 (알림 + 3시간, 한국 시간)
+  morning-opens-at: "08:00"
+  morning-deadline: "11:00"
+  evening-opens-at: "18:00"
+  evening-deadline: "21:00"
+  # 알림 시각 전 제출은 409 CHECK_NOT_OPEN. 낮 시연에서 저녁 체크를 보여 주려면 CHECK_TIME_ENFORCED=false
+  check-time-enforced: ${CHECK_TIME_ENFORCED:true}
+  jobs:
+    # 마감 시각에 미응답 처리. 위 deadline 을 바꾸면 같이 바꿔 주세요
+    morning-missed-cron: "0 0 11 * * *"
+    # 체크 알림 푸시 (아침 8시·저녁 6시). 앱이 자체 알람을 쓰면 CHECK_REMINDER_ENABLED=false
+    check-reminder-enabled: ${CHECK_REMINDER_ENABLED:true}
+    morning-reminder-cron: "0 0 8 * * *"
+    evening-reminder-cron: "0 0 18 * * *"
+    evening-close-cron: "0 0 21 * * *"
+    alert-escalation-delay-ms: 60000
+
+springdoc:
+  api-docs:
+    path: /api/docs/openapi
+  swagger-ui:
+    path: /api/docs
+
+logging:
+  level:
+    kr.todak: INFO
